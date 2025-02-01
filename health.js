@@ -100,6 +100,19 @@ function getDiskActivity() {
     });
 }
 
+// Function to get memory-consuming processes
+function getMemoryConsumingProcesses() {
+    return new Promise((resolve, reject) => {
+        exec('ps -eo pid,comm,%mem,rss --sort=-%mem | head -n 6', (err, stdout, stderr) => {
+            if (err) {
+                reject(`Error fetching memory-consuming processes: ${stderr}`);
+            } else {
+                resolve(stdout);
+            }
+        });
+    });
+}
+
 // Main function to gather all system information
 async function getSystemInfo() {
     try {
@@ -108,6 +121,7 @@ async function getSystemInfo() {
         const cpuUsage = getCpuUsage();
         const diskUsage = await getDiskUsage();
         const diskActivity = await getDiskActivity();
+        const memoryConsumingProcesses = await getMemoryConsumingProcesses();
 
         console.log('System Information:');
         console.log('-------------------');
@@ -118,8 +132,11 @@ async function getSystemInfo() {
         console.log(`Disk Usage: ${diskUsage.used} used, ${diskUsage.available} available`);
         console.log(`Disk Read Speed: ${diskActivity.readSpeed} KB/s`);
         console.log(`Disk Write Speed: ${diskActivity.writeSpeed} KB/s`);
+        console.log('\nTop 5 Memory-Consuming Processes:');
+        console.log('----------------------------------');
+        console.log(memoryConsumingProcesses);
     } catch (error) {
-        console.error(error);
+console.error(error);
     }
 }
 
