@@ -1,5 +1,6 @@
 const os = require('os');
 const { exec } = require('child_process');
+const cron = require('node-cron');
 const axios = require('axios');
 
 async function getSystemInfo() {
@@ -25,6 +26,12 @@ async function getSystemInfo() {
         console.error(error);
     }
 }
+
+// run job every minute
+cron.schedule('* * * * *', () => {
+    console.log('Fetching system info...');
+    getSystemInfo();
+});
 
 // Function to get the CPU temperature (specific to Raspberry Pi)
 function getTemperature() {
