@@ -1,5 +1,30 @@
 const os = require('os');
 const { exec } = require('child_process');
+const axios = require('axios');
+
+async function getSystemInfo() {
+    try {
+        const temperature = await getTemperature();
+        const memoryUsage = getMemoryUsage();
+        const cpuUsage = getCpuUsage();
+        const diskUsage = await getDiskUsage();
+        const diskActivity = await getDiskActivity();
+
+        const systemData = {
+            temperature,
+            cpuUsage,
+            memoryUsage,
+            diskUsage,
+            diskActivity,
+        };
+
+        // Send data to the API
+        await axios.post('http://raspberrypi.local:7000/system-info', systemData);
+        console.log('System data sent to API');
+    } catch (error) {
+        console.error(error);
+    }
+}
 
 // Function to get the CPU temperature (specific to Raspberry Pi)
 function getTemperature() {
@@ -112,32 +137,4 @@ function getMemoryConsumingProcesses() {
         });
     });
 }
-
-// Main function to gather all system information
-async function getSystemInfo() {
-    try {
-        const temperature = await getTemperature();
-        const memoryUsage = getMemoryUsage();
-        const cpuUsage = getCpuUsage();
-        const diskUsage = await getDiskUsage();
-        const diskActivity = await getDiskActivity();
-        const memoryConsumingProcesses = await getMemoryConsumingProcesses();
-
-        console.log('System Information:');
-        console.log('-------------------');
-        console.log(`Temperature: ${temperature}`);
-        console.log(`CPU Usage: ${cpuUsage}`);
-        console.log(`Memory Usage: ${memoryUsage.usedMemory} MB / ${memoryUsage.totalMemory} MB`);
-        console.log(`Free Memory: ${memoryUsage.freeMemory} MB`);
-        console.log(`Disk Usage: ${diskUsage.used} used, ${diskUsage.available} available`);
-        console.log(`Disk Read Speed: ${diskActivity.readSpeed} KB/s`);
-        console.log(`Disk Write Speed: ${diskActivity.writeSpeed} KB/s`);
-        console.log('\nTop 5 Memory-Consuming Processes:');
-        console.log('----------------------------------');
-        console.log(memoryConsumingProcesses);
-    } catch (error) {
-console.error(error);
-    }
-}
-
 getSystemInfo();
