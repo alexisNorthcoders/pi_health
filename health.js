@@ -7,7 +7,7 @@ async function getSystemInfo() {
     try {
         const temperature = await getTemperature();
         const memoryUsage = getMemoryUsage();
-        const cpuUsage = getCpuUsage();
+        const cpuUsage = await getCpuUsage();
         const diskUsage = await getDiskUsage();
         const diskActivity = await getDiskActivity();
 
@@ -21,7 +21,7 @@ async function getSystemInfo() {
 
         // Send data to the API
         await axios.post('http://raspberrypi.local:7000/system-info', systemData);
-        console.log('System data sent to API');
+        console.log(`System data sent to API - CPU: ${cpuUsage}, Temp: ${temperature}`);
     } catch (error) {
         console.error(error);
     }
@@ -90,12 +90,48 @@ function getDiskUsage() {
     });
 }
 
-// Function to get CPU usage
+// Function to get CPU usage using multiple methods for better accuracy
 function getCpuUsage() {
+    return new Promise((resolve) => {
+        // Try the top command first (more reliable on Raspberry Pi)
+        exec('top -bn1 | grep "%Cpu(s)"', (err, stdout, stderr) => {
+            if (!err && stdout) {
+                // Parse top output: "%Cpu(s): 25.0 us, 25.0 sy,  0.0 ni, 50.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st"
+                const match = stdout.match(/(\d+\.?\d*)\s+us/);
+                if (match) {
+                    const usage = Math.round(parseFloat(match[1]));
+                    resolve(`${usage}%`);
+                    return;
+                }
+            }
+            
+            // Fallback to sampling method
+            const startMeasure = cpuAverage();
+            
+            setTimeout(() => {
+                const endMeasure = cpuAverage();
+                const idleDifference = endMeasure.idle - startMeasure.idle;
+                const totalDifference = endMeasure.total - startMeasure.total;
+                
+                if (totalDifference === 0) {
+                    resolve('0%');
+                    return;
+                }
+                
+                const cpuPercentage = 100 - Math.floor(100 * idleDifference / totalDifference);
+                const usage = Math.max(0, Math.min(100, cpuPercentage));
+                
+                resolve(`${usage}%`);
+            }, 100); // Sample for 100ms
+        });
+    });
+}
+
+// Helper function to get CPU average
+function cpuAverage() {
     const cpus = os.cpus();
     let totalIdle = 0, totalTick = 0;
 
-    // Sum up the total CPU times
     cpus.forEach((cpu) => {
         for (let type in cpu.times) {
             totalTick += cpu.times[type];
@@ -103,11 +139,10 @@ function getCpuUsage() {
         totalIdle += cpu.times.idle;
     });
 
-    const idle = totalIdle / cpus.length;
-    const total = totalTick / cpus.length;
-    const usage = 100 - Math.floor((idle / total) * 100);
-
-    return `${usage}%`;
+    return {
+        idle: totalIdle / cpus.length,
+        total: totalTick / cpus.length
+    };
 }
 
 // Function to get disk I/O statistics (optional, using iostat)
