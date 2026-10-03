@@ -20,7 +20,7 @@ async function getSystemInfo() {
         };
 
         // Send data to the API
-        await axios.post('http://raspberrypi.local:7000/system-info', systemData);
+        await axios.post('http://raspberrypi.local:8080/system-info', systemData);
         console.log(`System data sent to API - CPU: ${cpuUsage}, Temp: ${temperature}`);
     } catch (error) {
         console.error(error);
