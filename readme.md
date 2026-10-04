@@ -1,5 +1,7 @@
 # System Health Monitoring Script
 
+> **Retired (October 2026).** go-server now monitors the Pi itself (its `monitor` package), and monitor-canvas reads from it. This script no longer runs, and the `POST /system-info` endpoint it posted to has been removed. It is kept for reference only.
+
 ## Overview
 This Node.js script collects system health metrics from a Raspberry Pi and sends them to a specified API endpoint. It runs automatically every minute using `node-cron`.
 
